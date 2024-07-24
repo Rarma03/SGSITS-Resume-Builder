@@ -39,11 +39,15 @@ app.use(cors({
 //     .catch(err => console.error('MongoDB connection error:', err));
 
 app.get('/api/', (req, res) => {
+    mongoose.connect(process.env.MONGO_URL);
     res.json('test okay');
 })
 
 app.post('/api/register', async (req, res) => {
-    mongoose.connect(process.env.MONGO_URL);
+    // mongoose.connect(process.env.MONGO_URL);
+    mongoose.connect(process.env.MONGO_URL)
+        .then(() => console.log('MongoDB connected'))
+        .catch(err => console.error('MongoDB connection error:', err));
     const { name, email, password } = req.body;
 
     try {
@@ -68,7 +72,10 @@ app.post('/api/register', async (req, res) => {
 })
 
 app.post('/api/login', async (req, res) => {
-    mongoose.connect(process.env.MONGO_URL);
+    // mongoose.connect(process.env.MONGO_URL);
+    mongoose.connect(process.env.MONGO_URL)
+        .then(() => console.log('MongoDB connected'))
+        .catch(err => console.error('MongoDB connection error:', err));
     const { email, password } = req.body;
     try {
         const userData = await UserModel.findOne({ email });
@@ -97,7 +104,10 @@ app.post('/api/login', async (req, res) => {
 })
 
 app.get('/api/profile', (req, res) => {
-    mongoose.connect(process.env.MONGO_URL);
+    // mongoose.connect(process.env.MONGO_URL);
+    mongoose.connect(process.env.MONGO_URL)
+        .then(() => console.log('MongoDB connected'))
+        .catch(err => console.error('MongoDB connection error:', err));
     const { token } = req.cookies;
     if (token) {
         jwt.verify(token, jwtSalt, {}, async (err, userData) => {
@@ -125,7 +135,10 @@ app.post('/api/logout', (req, res) => {
 })
 
 app.post('/api/resume/personinfo/:id', async (req, res) => {
-    mongoose.connect(process.env.MONGO_URL);
+    // mongoose.connect(process.env.MONGO_URL);
+    mongoose.connect(process.env.MONGO_URL)
+        .then(() => console.log('MongoDB connected'))
+        .catch(err => console.error('MongoDB connection error:', err));
     const {
         firstName,
         lastName,
