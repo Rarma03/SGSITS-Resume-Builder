@@ -37,11 +37,11 @@ app.use(cors({
 //     .then(() => console.log('MongoDB connected'))
 //     .catch(err => console.error('MongoDB connection error:', err));
 
-app.get('/', (req, res) => {
+app.get('/api/', (req, res) => {
     res.json('test okay');
 })
 
-app.post('/register', async (req, res) => {
+app.post('/api/register', async (req, res) => {
     mongoose.connect(process.env.MONGO_URL);
     const { name, email, password } = req.body;
 
@@ -66,7 +66,7 @@ app.post('/register', async (req, res) => {
     }
 })
 
-app.post('/login', async (req, res) => {
+app.post('/api/login', async (req, res) => {
     mongoose.connect(process.env.MONGO_URL);
     const { email, password } = req.body;
     try {
@@ -95,7 +95,7 @@ app.post('/login', async (req, res) => {
     }
 })
 
-app.get('/profile', (req, res) => {
+app.get('/api/profile', (req, res) => {
     mongoose.connect(process.env.MONGO_URL);
     const { token } = req.cookies;
     if (token) {
@@ -119,11 +119,11 @@ app.get('/profile', (req, res) => {
     }
 })
 
-app.post('/logout', (req, res) => {
+app.post('/api/logout', (req, res) => {
     res.clearCookie('token').json(true);
 })
 
-app.post('/resume/personinfo/:id', async (req, res) => {
+app.post('/api/resume/personinfo/:id', async (req, res) => {
     mongoose.connect(process.env.MONGO_URL);
     const {
         firstName,
@@ -181,7 +181,7 @@ app.post('/resume/personinfo/:id', async (req, res) => {
     }
 
 })
-app.get('/resume/personinfo/:id', async (req, res) => {
+app.get('/api/resume/personinfo/:id', async (req, res) => {
     mongoose.connect(process.env.MONGO_URL);
     const { id } = req.params;
     try {
@@ -196,7 +196,7 @@ app.get('/resume/personinfo/:id', async (req, res) => {
     }
 });
 
-app.post('/resume/academics/:id', async (req, res) => {
+app.post('/api/resume/academics/:id', async (req, res) => {
     mongoose.connect(process.env.MONGO_URL);
     const { tenthDetails, twelfthDetails, graduationDetails, scholasticAchievement } = req.body;
 
@@ -242,7 +242,7 @@ app.post('/resume/academics/:id', async (req, res) => {
         res.json(null);
     }
 });
-app.get('/resume/academics/:id', async (req, res) => {
+app.get('/api/resume/academics/:id', async (req, res) => {
     mongoose.connect(process.env.MONGO_URL);
     const { id } = req.params;
     try {
@@ -257,7 +257,7 @@ app.get('/resume/academics/:id', async (req, res) => {
     }
 });
 
-app.post('/resume/positions/:id', async (req, res) => {
+app.post('/api/resume/positions/:id', async (req, res) => {
     mongoose.connect(process.env.MONGO_URL);
     const { positions, activities } = req.body;
 
@@ -299,7 +299,7 @@ app.post('/resume/positions/:id', async (req, res) => {
         res.json(null);
     }
 });
-app.get('/resume/positions/:id', async (req, res) => {
+app.get('/api/resume/positions/:id', async (req, res) => {
     mongoose.connect(process.env.MONGO_URL);
     const { id } = req.params;
     try {
@@ -314,7 +314,7 @@ app.get('/resume/positions/:id', async (req, res) => {
     }
 });
 
-app.post('/resume/platforms/:id', async (req, res) => {
+app.post('/api/resume/platforms/:id', async (req, res) => {
     mongoose.connect(process.env.MONGO_URL);
     const { operatingSystems, programmingSkills, webDesigningSkills, softwareSkills, courses } = req.body;
 
@@ -362,7 +362,7 @@ app.post('/resume/platforms/:id', async (req, res) => {
         res.json(null);
     }
 });
-app.get('/resume/platforms/:id', async (req, res) => {
+app.get('/api/resume/platforms/:id', async (req, res) => {
     mongoose.connect(process.env.MONGO_URL);
     const { id } = req.params;
     try {
@@ -377,7 +377,7 @@ app.get('/resume/platforms/:id', async (req, res) => {
     }
 });
 
-app.post('/resume/projects/:id', async (req, res) => {
+app.post('/api/resume/projects/:id', async (req, res) => {
     mongoose.connect(process.env.MONGO_URL);
     const { id } = req.params;
     const { projects, workExperience } = req.body;
@@ -395,7 +395,7 @@ app.post('/resume/projects/:id', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
-app.get('/resume/projects/:id', async (req, res) => {
+app.get('/api/resume/projects/:id', async (req, res) => {
     mongoose.connect(process.env.MONGO_URL);
     const { id } = req.params;
 
@@ -1041,7 +1041,7 @@ class DocumentCreator {
     }
 }
 
-app.get('/download-resume/:id', async (req, res) => {
+app.get('/api/download-resume/:id', async (req, res) => {
     mongoose.connect(process.env.MONGO_URL);
     const userId = req.params.id;
 
