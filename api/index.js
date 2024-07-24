@@ -29,9 +29,9 @@ app.use(cookieParser());
 
 
 app.use(cors({
+    origin: '*',
     credentials: true,
-    methods: ['POST', 'GET'],
-    origin: ['http://localhost:5173', 'https://sgsits-resume-builder.vercel.app']
+    methods: ['POST', 'GET', 'PUT', 'DELETE'],
 }))
 
 // mongoose.connect(process.env.MONGO_URL)
