@@ -1,17 +1,7 @@
 {
-    "builds": [
-        {
-            "src": "client/package.json",
-            "use": "@vercel/static-build",
-            "config": {
-                "distDir": "client/dist"
-            }
-        },
-        {
-            "src": "api/index.js",
-            "use": "@vercel/node"
-        }
-    ],
+    "buildCommand": "cd client && yarn install && yarn build",
+    "outputDirectory": "dist",
+    "framework": "vite",
     "rewrites": [
         {
             "source": "/api/(.*)",
