@@ -38,20 +38,20 @@ app.use(cors({
     origin: ['http://localhost:5173', 'https://sgsits-resume-builder.vercel.app']
 }))
 
-// mongoose.connect(process.env.MONGO_URL)
-//     .then(() => console.log('MongoDB connected'))
-//     .catch(err => console.error('MongoDB connection error:', err));
+mongoose.connect(process.env.MONGO_URL)
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.error('MongoDB connection error:', err));
 
 app.get('/api/', (req, res) => {
-    mongoose.connect(process.env.MONGO_URL);
+    // mongoose.connect(process.env.MONGO_URL);
     res.json('test okay');
 })
 
 app.post('/api/register', async (req, res) => {
     // mongoose.connect(process.env.MONGO_URL);
-    mongoose.connect(process.env.MONGO_URL)
-        .then(() => console.log('MongoDB connected'))
-        .catch(err => console.error('MongoDB connection error:', err));
+    // mongoose.connect(process.env.MONGO_URL)
+    //     .then(() => console.log('MongoDB connected'))
+    //     .catch(err => console.error('MongoDB connection error:', err));
     const { name, email, password } = req.body;
 
     try {
@@ -77,9 +77,9 @@ app.post('/api/register', async (req, res) => {
 
 app.post('/api/login', async (req, res) => {
     // mongoose.connect(process.env.MONGO_URL);
-    mongoose.connect(process.env.MONGO_URL)
-        .then(() => console.log('MongoDB connected'))
-        .catch(err => console.error('MongoDB connection error:', err));
+    // mongoose.connect(process.env.MONGO_URL)
+    //     .then(() => console.log('MongoDB connected'))
+    //     .catch(err => console.error('MongoDB connection error:', err));
     const { email, password } = req.body;
     try {
         const userData = await UserModel.findOne({ email });
@@ -107,32 +107,58 @@ app.post('/api/login', async (req, res) => {
     }
 })
 
-app.get('/api/profile', (req, res) => {
-    // mongoose.connect(process.env.MONGO_URL);
-    mongoose.connect(process.env.MONGO_URL)
-        .then(() => console.log('MongoDB connected'))
-        .catch(err => console.error('MongoDB connection error:', err));
+// app.get('/api/profile', (req, res) => {
+//     // mongoose.connect(process.env.MONGO_URL);
+//     // mongoose.connect(process.env.MONGO_URL)
+//     //     .then(() => console.log('MongoDB connected'))
+//     //     .catch(err => console.error('MongoDB connection error:', err));
+//     const { token } = req.cookies;
+//     if (token) {
+//         jwt.verify(token, jwtSalt, {}, async (err, userData) => {
+//             if (err) throw err;
+
+//             // fetch user from database from the id as we have only two
+//             // thing in cookie data 1. id and 2. email
+
+//             // -------- Two method to fetch -------
+//             // --1
+//             // const { name, email, _id } = await UserModel.findById(userData.id);
+//             // --2
+//             const { name, email, _id } = await UserModel.findOne({ _id: userData.id });
+
+//             res.json({ name, email, _id });
+//         })
+//     }
+//     else {
+//         res.json(null);
+//     }
+// })
+app.get('/api/profile', async (req, res) => {
     const { token } = req.cookies;
+
     if (token) {
-        jwt.verify(token, jwtSalt, {}, async (err, userData) => {
-            if (err) throw err;
+        try {
+            jwt.verify(token, jwtSalt, async (err, userData) => {
+                if (err) {
+                    console.error('JWT verification error:', err);
+                    return res.status(401).json({ message: 'Invalid token' });
+                }
 
-            // fetch user from database from the id as we have only two
-            // thing in cookie data 1. id and 2. email
-
-            // -------- Two method to fetch -------
-            // --1
-            // const { name, email, _id } = await UserModel.findById(userData.id);
-            // --2
-            const { name, email, _id } = await UserModel.findOne({ _id: userData.id });
-
-            res.json({ name, email, _id });
-        })
+                const user = await UserModel.findById(userData.id, 'name email _id');
+                if (user) {
+                    res.json(user);
+                } else {
+                    res.status(404).json({ message: 'User not found' });
+                }
+            });
+        } catch (err) {
+            console.error('Profile fetch error:', err);
+            res.status(500).json({ message: 'Server error' });
+        }
+    } else {
+        res.status(401).json({ message: 'No token provided' });
     }
-    else {
-        res.json(null);
-    }
-})
+});
 
 app.post('/api/logout', (req, res) => {
     res.clearCookie('token').json(true);
@@ -140,9 +166,9 @@ app.post('/api/logout', (req, res) => {
 
 app.post('/api/resume/personinfo/:id', async (req, res) => {
     // mongoose.connect(process.env.MONGO_URL);
-    mongoose.connect(process.env.MONGO_URL)
-        .then(() => console.log('MongoDB connected'))
-        .catch(err => console.error('MongoDB connection error:', err));
+    // mongoose.connect(process.env.MONGO_URL)
+    //     .then(() => console.log('MongoDB connected'))
+    //     .catch(err => console.error('MongoDB connection error:', err));
     const {
         firstName,
         lastName,
@@ -200,7 +226,7 @@ app.post('/api/resume/personinfo/:id', async (req, res) => {
 
 })
 app.get('/api/resume/personinfo/:id', async (req, res) => {
-    mongoose.connect(process.env.MONGO_URL);
+    // mongoose.connect(process.env.MONGO_URL);
     const { id } = req.params;
     try {
         const personInfo = await PersonaInfoModel.findOne({ owner: id });
@@ -215,7 +241,7 @@ app.get('/api/resume/personinfo/:id', async (req, res) => {
 });
 
 app.post('/api/resume/academics/:id', async (req, res) => {
-    mongoose.connect(process.env.MONGO_URL);
+    // mongoose.connect(process.env.MONGO_URL);
     const { tenthDetails, twelfthDetails, graduationDetails, scholasticAchievement } = req.body;
 
     // Check if user is verified
@@ -261,7 +287,7 @@ app.post('/api/resume/academics/:id', async (req, res) => {
     }
 });
 app.get('/api/resume/academics/:id', async (req, res) => {
-    mongoose.connect(process.env.MONGO_URL);
+    // mongoose.connect(process.env.MONGO_URL);
     const { id } = req.params;
     try {
         const academicInfo = await AcademicModel.findOne({ owner: id });
@@ -276,7 +302,7 @@ app.get('/api/resume/academics/:id', async (req, res) => {
 });
 
 app.post('/api/resume/positions/:id', async (req, res) => {
-    mongoose.connect(process.env.MONGO_URL);
+    // mongoose.connect(process.env.MONGO_URL);
     const { positions, activities } = req.body;
 
     // Check if user is verified
@@ -318,7 +344,7 @@ app.post('/api/resume/positions/:id', async (req, res) => {
     }
 });
 app.get('/api/resume/positions/:id', async (req, res) => {
-    mongoose.connect(process.env.MONGO_URL);
+    // mongoose.connect(process.env.MONGO_URL);
     const { id } = req.params;
     try {
         const positionInfo = await PositionModel.findOne({ owner: id });
@@ -333,7 +359,7 @@ app.get('/api/resume/positions/:id', async (req, res) => {
 });
 
 app.post('/api/resume/platforms/:id', async (req, res) => {
-    mongoose.connect(process.env.MONGO_URL);
+    // mongoose.connect(process.env.MONGO_URL);
     const { operatingSystems, programmingSkills, webDesigningSkills, softwareSkills, courses } = req.body;
 
     // Check if user is verified
@@ -381,7 +407,7 @@ app.post('/api/resume/platforms/:id', async (req, res) => {
     }
 });
 app.get('/api/resume/platforms/:id', async (req, res) => {
-    mongoose.connect(process.env.MONGO_URL);
+    // mongoose.connect(process.env.MONGO_URL);
     const { id } = req.params;
     try {
         const platformInfo = await PlatformModel.findOne({ owner: id });
@@ -396,7 +422,7 @@ app.get('/api/resume/platforms/:id', async (req, res) => {
 });
 
 app.post('/api/resume/projects/:id', async (req, res) => {
-    mongoose.connect(process.env.MONGO_URL);
+    // mongoose.connect(process.env.MONGO_URL);
     const { id } = req.params;
     const { projects, workExperience } = req.body;
 
@@ -414,7 +440,7 @@ app.post('/api/resume/projects/:id', async (req, res) => {
     }
 });
 app.get('/api/resume/projects/:id', async (req, res) => {
-    mongoose.connect(process.env.MONGO_URL);
+    // mongoose.connect(process.env.MONGO_URL);
     const { id } = req.params;
 
     try {
@@ -1060,7 +1086,7 @@ class DocumentCreator {
 }
 
 app.get('/api/download-resume/:id', async (req, res) => {
-    mongoose.connect(process.env.MONGO_URL);
+    // mongoose.connect(process.env.MONGO_URL);
     const userId = req.params.id;
 
     try {

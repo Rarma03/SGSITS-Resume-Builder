@@ -6,13 +6,6 @@ import axios from "axios";
 export default function ProfilePage() {
     const { user, ready, setUser } = useContext(UserContext);
 
-    if (!ready) {
-        return (
-            <div>
-                Wait... (refresh)
-            </div>
-        )
-    }
 
     const navigate = useNavigate();
     useEffect(() => {
@@ -24,6 +17,14 @@ export default function ProfilePage() {
     let currentUser = 'Guest';
     if (user) {
         currentUser = user.name;
+    }
+
+    if (!ready) {
+        return (
+            <div>
+                Wait... (refresh)
+            </div>
+        )
     }
 
     // logout function
