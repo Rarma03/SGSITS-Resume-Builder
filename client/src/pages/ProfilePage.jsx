@@ -15,8 +15,10 @@ export default function ProfilePage() {
     }, [ready, user, navigate]);
 
     let currentUser = 'Guest';
+    let firstname = "";
     if (user) {
         currentUser = user.name;
+        firstname = user.name.split(' ')[0];
     }
 
     if (!ready) {
@@ -52,7 +54,7 @@ export default function ProfilePage() {
 
             <div className="flex flex-col gap-2 w-full items-center mt-20 sm:mt-0">
                 <div className="w-full">
-                    <h1 className="">Welcome Back...</h1>
+                    <h1 className="">Welcome Back {firstname}...</h1>
                 </div>
                 <div className="card bg-white sm:h-[70vh] h-[40vh]">
                     <div className="bg-blue-500">
@@ -72,6 +74,7 @@ export default function ProfilePage() {
                     <div className="bg-violet-500"><span>Resume Examples<h1>Coming Soon</h1></span></div>
                     <div className="bg-yellow-500"><span>New Features</span></div>
                 </div>
+
                 <button
                     className="bg-red-500 h-[15vh] w-full flex justify-center items-center rounded-md hover:bg-red-900 cursor-pointer"
                     onClick={handleLogout} >
