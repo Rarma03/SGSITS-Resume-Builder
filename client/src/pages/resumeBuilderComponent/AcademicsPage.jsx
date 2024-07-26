@@ -255,7 +255,7 @@ export default function AcademicsPage() {
                 <div className="flex flex-col">
                     <div className="bg-white rounded-md text-black p-2">
                         <div className="text-center font-bold">Scholastic Achievement</div>
-                        <label>Description :</label>
+                        <label>Description : [use '/' to make next bullet point e.g. point1/point2/point3/...so on]</label>
                         <input
                             type="text"
                             name="scholasticAchievement"

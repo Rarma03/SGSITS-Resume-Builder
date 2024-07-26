@@ -103,7 +103,7 @@ export default function PositionPage() {
                             onChange={(e) => handlePositionChange(index, e)}
                             placeholder="e.g. Jan 2021 - Dec 2021"
                         />
-                        <label>Description:</label>
+                        <label>Description: [text format : e.g. Point1/Point2/Point3...]</label>
                         <input
                             type="text"
                             name="description"

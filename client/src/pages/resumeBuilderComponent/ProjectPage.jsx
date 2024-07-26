@@ -105,7 +105,7 @@ export default function ProjectPage() {
                             name="description"
                             value={project.description}
                             onChange={(e) => handleProjectChange(index, e)}
-                            placeholder="e.g. Project Description"
+                            placeholder="e.g. Description-Point1/Point2/Point3..."
                         />
                         <label>Technologies:</label>
                         <input
