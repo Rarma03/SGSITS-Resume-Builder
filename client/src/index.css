@@ -15,7 +15,7 @@ input[type='text']{
   @apply w-full border my-1 py-2 px-3 rounded-xl;
 }
 
-input[type='submit']{
+input[type='submit'],.load-btn{
   @apply w-full border my-1 py-2 px-3 rounded-xl;
   @apply hover:bg-yellow-200 hover:text-black hover:font-bold
 }

@@ -2,27 +2,40 @@ import { useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import UserContext from "../UserContext";
+import { checkValidEmail } from '../utils/utitlityFunctions'
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const navigate = useNavigate(); // Use useNavigate hook for navigation
     const { setUser } = useContext(UserContext);
+    const [load, setLoad] = useState(false);
 
     async function handleLoginSubmit(event) {
         event.preventDefault();
         try {
+            setLoad(true);
+            let chk = checkValidEmail(email);
+            if (!chk) {
+                alert('Use Appropriate Mail id only')
+                setEmail('');
+                setLoad(false);
+                return;
+            }
             const userData = await axios.post('/login', {
                 email,
                 password
             });
+
             alert("Login Success");
             setUser(userData.data); // we only want to pass data not other info
+            setLoad(false);
 
             navigate('/profile');
         }
         catch (err) {
             alert(err.response?.data?.message);
+            setLoad(false);
         }
     }
     return (
@@ -55,8 +68,13 @@ export default function LoginPage() {
                             placeholder="password"
                             value={password}
                             onChange={event => setPassword(event.target.value)} />
-                        <input type="submit" value="Login"
-                        />
+                        <button
+                            type="submit"
+                            className={`load-btn ${load ? 'cursor-not-allowed opacity-50' : ''}`}
+                            disabled={load}
+                        >
+                            {load ? 'Loading...' : 'Login'}
+                        </button>
                         <div className="text-center">
                             Don't Have a Account?
                             <Link to={'/register'} className="ml-1 text-yellow-300 underline ">Register</Link>

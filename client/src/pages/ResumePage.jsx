@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Link, useParams } from "react-router-dom";
 import ResumeNavPage from "../ResumeNavPage";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import UserContext from "../UserContext";
 
 export default function ResumePage() {
@@ -26,11 +26,15 @@ export default function ResumePage() {
         )
     }
 
-    const downloadResume = async () => {
+    const [load, setLoad] = useState(false);
+    const downloadResume = async (ev) => {
+        ev.preventDefault();
         try {
+            setLoad(true);
             const response = await axios.get(`/download-resume/${id}`, {
                 responseType: 'blob',
             });
+            setLoad(false);
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
@@ -39,6 +43,7 @@ export default function ResumePage() {
             link.click();
         } catch (error) {
             console.error('Error downloading resume:', error);
+            setLoad(false);
         }
     };
 
@@ -58,15 +63,23 @@ export default function ResumePage() {
             {subpage === 'resume' && (
                 <div className="text-white text-2xl w-full text-center">
                     <h1 className="mt-20 mb-4">Your <span className="underline underline-offset-2 decoration-yellow-300">Resume</span> Not so far... Just Download it Now</h1>
+                    <p className='text-sm -mt-3 mb-5'>For Best View Open Downloaded File In MS Word</p>
                     <div className="flex justify-center w-full">
                         <button
                             onClick={downloadResume}
-                            className="flex items-center p-2 rounded-md gap-2 border border-white custom-btn-bg-side"
+                            className={`flex items-center p-2 rounded-md gap-2 border border-white custom-btn-bg-side ${load ? 'cursor-not-allowed opacity-50' : ''}`}
+                            disabled={load}
                         >
-                            Download
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="m9 12.75 3 3m0 0 3-3m-3 3v-7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                            </svg>
+                            {load ? (
+                                <span>Generate Ho rha Resume Wait...</span>
+                            ) : (
+                                <>
+                                    Download
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="m9 12.75 3 3m0 0 3-3m-3 3v-7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                    </svg>
+                                </>
+                            )}
                         </button>
                     </div>
                     <div className="my-5">Or</div>
@@ -82,7 +95,8 @@ export default function ResumePage() {
                         </button>
                     </div>
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 }

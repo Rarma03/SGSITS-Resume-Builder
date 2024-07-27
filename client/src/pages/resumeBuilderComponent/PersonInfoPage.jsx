@@ -147,10 +147,10 @@ export default function PersonaInfoPage() {
                     />
                 </div>
                 <div className="flex flex-col">
-                    <label>Passing Year</label>
+                    <label>Current Year</label>
                     <input
                         type="text"
-                        placeholder="Year"
+                        placeholder="e.g. I ,II ,III or IV"
                         value={year}
                         onChange={event => setYear(event.target.value)}
                         className="p-2 rounded text-black"

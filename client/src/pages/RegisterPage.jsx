@@ -1,26 +1,42 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import axios from "axios"
+import { checkIfEmpty, checkValidEmail } from "../utils/utitlityFunctions";
 
 export default function RegisterPage() {
     let [name, setName] = useState('');
     let [email, setEmail] = useState('');
     let [password, setPassword] = useState('');
     const navigate = useNavigate();
+    const [load, setLoad] = useState(false);
 
     async function registerUser(event) {
         event.preventDefault();
+        if (checkIfEmpty(name) || checkIfEmpty(email) || checkIfEmpty(password)) {
+            alert('Dont Leave empty fields');
+            return;
+        }
         try {
+            setLoad(true);
+            let chk = checkValidEmail(email);
+            if (!chk) {
+                alert('Use Appropriate Mail id only')
+                setEmail('');
+                setLoad(false);
+                return;
+            }
             await axios.post('/register', {
                 name,
                 email,
                 password
             });
             alert("Registration Complete");
+            setLoad(false);
             navigate('/login');
         }
         catch (err) {
-            alert(err.response?.data?.message || 'Some problem occured while registring');
+            alert(err.response?.data?.message || 'Some problem occured while registration');
+            setLoad(false);
         }
     }
 
@@ -52,7 +68,13 @@ export default function RegisterPage() {
                             onChange={event => setPassword(event.target.value)}
 
                         />
-                        <input type="submit" value="Register" />
+                        <button
+                            type="submit"
+                            className={`load-btn ${load ? 'cursor-not-allowed opacity-50' : ''}`}
+                            disabled={load}
+                        >
+                            {load ? 'Wait we creating your Account...' : 'Register'}
+                        </button>
                         <div className="text-center">
                             Already a Member?
                             <Link to={'/login'} className="ml-1 text-yellow-300 underline ">Login</Link>
