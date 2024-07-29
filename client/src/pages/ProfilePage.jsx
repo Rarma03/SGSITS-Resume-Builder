@@ -54,7 +54,7 @@ export default function ProfilePage() {
 
             <div className="flex flex-col gap-2 w-full items-center mt-20 sm:mt-0">
                 <div className="w-full">
-                    <h1 className="">Welcome Back {firstname} Bhai...</h1>
+                    <h1 className="">Welcome Back 😊 {firstname} Ji...</h1>
                 </div>
                 <div className="card bg-white sm:h-[70vh] h-[40vh]">
                     <div className="bg-blue-500">
