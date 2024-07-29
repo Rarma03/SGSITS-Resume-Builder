@@ -6,12 +6,14 @@ import UserContext from "../UserContext";
 
 export default function ResumePage() {
     const { id } = useParams();
+    const [load, setLoad] = useState(false);
+    const { user, ready } = useContext(UserContext);
+
     let { subpage } = useParams();
     if (subpage === undefined) {
         subpage = 'resume';
     }
 
-    const { user, ready } = useContext(UserContext);
 
     let currentUser = 'Guest';
     if (user) {
@@ -26,7 +28,6 @@ export default function ResumePage() {
         )
     }
 
-    const [load, setLoad] = useState(false);
     const downloadResume = async (ev) => {
         ev.preventDefault();
         try {
