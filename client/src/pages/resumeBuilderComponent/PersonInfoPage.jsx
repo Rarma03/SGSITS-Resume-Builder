@@ -14,29 +14,30 @@ export default function PersonaInfoPage() {
     const [year, setYear] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
-    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     const { id } = useParams();
 
     // updating data from database if it is present
     useEffect(() => {
-        // fetchUserData();
-        if (!id) {
-            return;
-        }
-        axios.get(`/resume/personinfo/${id}`).then((res) => {
-            const { data } = res;
-            setFirstName(data.firstName || '');
-            setLastName(data.lastName || '');
-            setDob(data.dob || '');
-            setGender(data.gender || '');
-            setBranch(data.branch || '');
-            setEnrollmentNo(data.enrollmentNo || '');
-            setYear(data.year || '');
-            setEmail(data.email || '');
-            setPhone(data.phone || '');
-        })
+        if (!id) return;
+
+        axios.get(`/resume/personinfo/${id}`, { withCredentials: true })
+            .then((res) => {
+                const { data } = res;
+                setFirstName(data.firstName || '');
+                setLastName(data.lastName || '');
+                setDob(data.dob || '');
+                setGender(data.gender || '');
+                setBranch(data.branch || '');
+                setEnrollmentNo(data.enrollmentNo || '');
+                setYear(data.year || '');
+                setEmail(data.email || '');
+                setPhone(data.phone || '');
+            })
+            .catch((error) => {
+                console.error('Error fetching user data:', error);
+            });
     }, [id]);
 
     // handling save button
@@ -55,17 +56,13 @@ export default function PersonaInfoPage() {
         };
 
         try {
-            await axios.post(`/resume/personinfo/${id}`, formData);
+            await axios.post(`/resume/personinfo/${id}`, formData, { withCredentials: true });
             console.log('Form data submitted successfully');
             // navigate('/resume/academics/' + id);
         } catch (error) {
             console.error('Error submitting form data:', error);
         }
     };
-
-    // if (loading) {
-    //     return <div>Loading...</div>; // Or any loading spinner/component
-    // }
 
     return (
         <div className="bg-black min-h-screen text-white p-4 hide-scrollbar">
