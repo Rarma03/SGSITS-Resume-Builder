@@ -15,12 +15,11 @@ export default function PersonaInfoPage() {
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
     const navigate = useNavigate();
-
     const { id } = useParams();
 
     // updating data from database if it is present
     useEffect(() => {
-        if (!id) return;
+        // if (!id) return;
 
         axios.get(`/resume/personinfo/${id}`, { withCredentials: true })
             .then((res) => {

@@ -27,16 +27,12 @@ const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, TabSt
 app.use(express.json());
 app.use(cookieParser());
 
-app.options("", cors({
-    credentials: true,
-    methods: ['POST', 'GET', 'PUT', 'DELETE'],
-    origin: ['http://localhost:5173', 'https://sgsits-resume-builder.vercel.app']
-}))
 app.use(cors({
+    origin: ['http://localhost:5173', 'https://sgsits-resume-builder.vercel.app'],
     credentials: true,
-    methods: ['POST', 'GET', 'PUT', 'DELETE'],
-    origin: ['http://localhost:5173', 'https://sgsits-resume-builder.vercel.app']
-}))
+    methods: ['GET', 'POST', 'PUT', 'DELETE']
+}));
+
 
 mongoose.connect(process.env.MONGO_URL)
     .then(() => console.log('MongoDB connected'))

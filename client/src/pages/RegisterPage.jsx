@@ -61,7 +61,7 @@ export default function RegisterPage() {
                             onChange={event => setEmail(event.target.value)}
                         />
                         <label >Password :</label>
-                        <input type="text"
+                        <input type="password"
                             className="text-black"
                             placeholder="password"
                             value={password}

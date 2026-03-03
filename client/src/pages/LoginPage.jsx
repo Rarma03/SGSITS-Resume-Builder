@@ -63,7 +63,7 @@ export default function LoginPage() {
                         <label >
                             Password :
                         </label>
-                        <input type="text"
+                        <input type="password"
                             className="text-black"
                             placeholder="password"
                             value={password}

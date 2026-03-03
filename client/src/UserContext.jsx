@@ -15,7 +15,8 @@ export function UserContextProvider({ children }) {
                 setReady(true);
             } catch (error) {
                 console.error('Error fetching user profile in usercontext.jsx:', error);
-                // setUser(null);
+                setUser(null);
+                setReady(true);
             }
         };
 
