@@ -21,36 +21,41 @@ const jwtSalt = 'justarandomstringcangohere'
 const cookieParser = require('cookie-parser');
 
 
-const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, TabStopType, TabStopPosition, TableRow, TableCell, Table, WidthType } = require("docx");
+const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, TabStopType, TabStopPosition, TableRow, TableCell, Table, WidthType, ImageRun } = require("docx");
+const fs = require('fs');
+const path = require('path');
 
+app.use(express.static('image'));
 
 app.use(express.json());
 app.use(cookieParser());
 
-app.use(cors({
-    origin: ['http://localhost:5173', 'https://sgsits-resume-builder.vercel.app'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE']
-}));
+const mongokey = 'mongodb+srv://710vermaraj:BV5i630RqWD3V0FY@gsresumebuildercluster.wdsegoh.mongodb.net/?retryWrites=true&w=majority&appName=gsResumeBuilderCluster';
 
-
-mongoose.connect(process.env.MONGO_URL)
+// Connect to MongoDB once at startup
+mongoose.connect(mongokey)
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.error('MongoDB connection error:', err));
 
-app.get('/api/', (req, res) => {
-    // mongoose.connect(process.env.MONGO_URL);
-    res.json('test okay');
+app.use(cors({
+    origin: ['http://localhost:5173', 'https://sgsits-resume-builder.vercel.app', 'https://sgsits-resume-builder-01.vercel.app', 'https://sgsits-resume-builder-frontend.vercel.app'],
+    credentials: true,
+}))
+
+// Health check route
+app.get('/', (req, res) => {
+    res.json('mongoconnect');
 })
 
-app.post('/api/register', async (req, res) => {
-    // mongoose.connect(process.env.MONGO_URL);
-    // mongoose.connect(process.env.MONGO_URL)
-    //     .then(() => console.log('MongoDB connected'))
-    //     .catch(err => console.error('MongoDB connection error:', err));
+app.post('/register', async (req, res) => {
     const { name, email, password } = req.body;
 
     try {
+        // Validate input
+        if (!name || !email || !password) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+
         // Check if the user already exists
         const existingUser = await UserModel.findOne({ email });
         if (existingUser) {
@@ -71,133 +76,108 @@ app.post('/api/register', async (req, res) => {
     }
 })
 
-app.post('/api/login', async (req, res) => {
-    // mongoose.connect(process.env.MONGO_URL);
-    // mongoose.connect(process.env.MONGO_URL)
-    //     .then(() => console.log('MongoDB connected'))
-    //     .catch(err => console.error('MongoDB connection error:', err));
+app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     try {
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email and password required' });
+        }
+
         const userData = await UserModel.findOne({ email });
-        // if mail not exists it will be null or undefined
         if (userData) {
             const passCheck = bcrypt.compareSync(password, userData.password);
             if (passCheck) {
-                // payload - information you want to include in the token
                 const payload = { email: userData.email, id: userData._id };
                 jwt.sign(payload, jwtSalt, {}, (err, token) => {
-                    if (err) throw err;
-                    res.cookie('token', token).json(userData);
+                    if (err) {
+                        return res.status(500).json({ message: 'Error creating token' });
+                    }
+                    res.cookie('token', token, {
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
+                        sameSite: 'lax',
+                        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+                    }).json({ user: userData, token });
                 });
-            }
-            else {
+            } else {
                 res.status(422).json({ message: 'Wrong Password' });
             }
-        }
-        else {
+        } else {
             res.status(422).json({ message: 'No Such User Found' });
         }
-    }
-    catch (err) {
+    } catch (err) {
+        console.error('Login error:', err);
         res.status(500).json({ message: 'Wrong Email or Password' });
-    }
-})
-
-// app.get('/api/profile', (req, res) => {
-//     // mongoose.connect(process.env.MONGO_URL);
-//     // mongoose.connect(process.env.MONGO_URL)
-//     //     .then(() => console.log('MongoDB connected'))
-//     //     .catch(err => console.error('MongoDB connection error:', err));
-//     const { token } = req.cookies;
-//     if (token) {
-//         jwt.verify(token, jwtSalt, {}, async (err, userData) => {
-//             if (err) throw err;
-
-//             // fetch user from database from the id as we have only two
-//             // thing in cookie data 1. id and 2. email
-
-//             // -------- Two method to fetch -------
-//             // --1
-//             // const { name, email, _id } = await UserModel.findById(userData.id);
-//             // --2
-//             const { name, email, _id } = await UserModel.findOne({ _id: userData.id });
-
-//             res.json({ name, email, _id });
-//         })
-//     }
-//     else {
-//         res.json(null);
-//     }
-// })
-app.get('/api/profile', async (req, res) => {
-    const { token } = req.cookies;
-
-    if (token) {
-        try {
-            jwt.verify(token, jwtSalt, async (err, userData) => {
-                if (err) {
-                    console.error('JWT verification error:', err);
-                    return res.status(401).json({ message: 'Invalid token' });
-                }
-
-                const user = await UserModel.findById(userData.id, 'name email _id');
-                if (user) {
-                    res.json(user);
-                } else {
-                    res.status(404).json({ message: 'User not found' });
-                }
-            });
-        } catch (err) {
-            console.error('Profile fetch error:', err);
-            res.status(500).json({ message: 'Server error' });
-        }
-    } else {
-        res.status(401).json({ message: 'No token provided' });
     }
 });
 
-app.post('/api/logout', (req, res) => {
+
+app.get('/profile', async (req, res) => {
+    try {
+        const { token } = req.cookies;
+        console.log('Token received:', token ? 'Yes' : 'No');
+
+        if (!token) {
+            return res.json(null);
+        }
+
+        jwt.verify(token, jwtSalt, {}, async (err, userData) => {
+            if (err) {
+                console.error('Token verification error:', err);
+                return res.status(401).json({ message: 'Invalid token' });
+            }
+
+            try {
+                const { name, email, _id } = await UserModel.findOne({ _id: userData.id });
+                res.json({ name, email, _id });
+            } catch (dbError) {
+                console.error('Database error:', dbError);
+                res.status(500).json({ message: 'Error fetching user data' });
+            }
+        });
+    } catch (error) {
+        console.error('Profile route error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+})
+
+app.post('/logout', (req, res) => {
+    // mongoose.connect(mongokey);
     res.clearCookie('token').json(true);
 })
 
-app.post('/api/resume/personinfo/:id', async (req, res) => {
-    // mongoose.connect(process.env.MONGO_URL);
-    // mongoose.connect(process.env.MONGO_URL)
-    //     .then(() => console.log('MongoDB connected'))
-    //     .catch(err => console.error('MongoDB connection error:', err));
-    const {
-        firstName,
-        lastName,
-        dob,
-        gender,
-        branch,
-        enrollmentNo,
-        year,
-        email,
-        phone,
-    } = req.body;
+app.post('/resume/personinfo/:id', async (req, res) => {
+    try {
+        const {
+            firstName, lastName, dob, gender, branch, enrollmentNo,
+            year, email, phone,
+        } = req.body;
 
-    // check if user is verified
-    const { token } = req.cookies;
-    if (token) {
+        // check if user is verified
+        const { token } = req.cookies;
+        if (!token) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
         jwt.verify(token, jwtSalt, {}, async (err, userData) => {
-            if (err) throw err;
-
-            const personInfoDoc = await PersonaInfoModel.findOne({ owner: userData.id });
-            // find if it is already exist update
-            if (personInfoDoc) {
-                personInfoDoc.set({
-                    firstName, lastName, dob, gender, branch, enrollmentNo,
-                    year, email, phone
-                });
-
-                await personInfoDoc.save();
-                res.json(personInfoDoc);
+            if (err) {
+                return res.status(401).json({ message: 'Invalid token' });
             }
-            // if not create new data
-            else {
-                try {
-                    // create a new personal info for user
+
+            try {
+                const personInfoDoc = await PersonaInfoModel.findOne({ owner: userData.id });
+                // find if it is already exist update
+                if (personInfoDoc) {
+                    personInfoDoc.set({
+                        firstName, lastName, dob, gender, branch, enrollmentNo,
+                        year, email, phone
+                    });
+
+                    await personInfoDoc.save();
+                    res.json(personInfoDoc);
+                }
+                // if not create new data
+                else {
                     const personInfoData = await PersonInfoModel.create({
                         owner: userData.id,
                         firstName, lastName,
@@ -209,20 +189,18 @@ app.post('/api/resume/personinfo/:id', async (req, res) => {
 
                     res.json(personInfoData);
                 }
-                catch (error) {
-                    console.error('Error during Saving', error);
-                    res.status(500).json({ message: 'Server error during saving' });
-                }
+            } catch (error) {
+                console.error('Error during Saving', error);
+                res.status(500).json({ message: 'Server error during saving' });
             }
-        })
+        });
+    } catch (error) {
+        console.error('Route error:', error);
+        res.status(500).json({ message: 'Server error' });
     }
-    else {
-        res.json(null);
-    }
-
 })
-app.get('/api/resume/personinfo/:id', async (req, res) => {
-    // mongoose.connect(process.env.MONGO_URL);
+
+app.get('/resume/personinfo/:id', async (req, res) => {
     const { id } = req.params;
     try {
         const personInfo = await PersonaInfoModel.findOne({ owner: id });
@@ -236,15 +214,20 @@ app.get('/api/resume/personinfo/:id', async (req, res) => {
     }
 });
 
-app.post('/api/resume/academics/:id', async (req, res) => {
-    // mongoose.connect(process.env.MONGO_URL);
-    const { tenthDetails, twelfthDetails, graduationDetails, scholasticAchievement } = req.body;
+app.post('/resume/academics/:id', async (req, res) => {
+    try {
+        const { tenthDetails, twelfthDetails, graduationDetails, scholasticAchievement } = req.body;
 
-    // Check if user is verified
-    const { token } = req.cookies;
-    if (token) {
+        // Check if user is verified
+        const { token } = req.cookies;
+        if (!token) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
         jwt.verify(token, jwtSalt, {}, async (err, userData) => {
-            if (err) throw err;
+            if (err) {
+                return res.status(401).json({ message: 'Invalid token' });
+            }
 
             try {
                 // Find if it already exists
@@ -278,12 +261,12 @@ app.post('/api/resume/academics/:id', async (req, res) => {
                 res.status(500).json({ message: 'Server error during saving' });
             }
         });
-    } else {
-        res.json(null);
+    } catch (error) {
+        console.error('Route error:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 });
-app.get('/api/resume/academics/:id', async (req, res) => {
-    // mongoose.connect(process.env.MONGO_URL);
+app.get('/resume/academics/:id', async (req, res) => {
     const { id } = req.params;
     try {
         const academicInfo = await AcademicModel.findOne({ owner: id });
@@ -297,15 +280,20 @@ app.get('/api/resume/academics/:id', async (req, res) => {
     }
 });
 
-app.post('/api/resume/positions/:id', async (req, res) => {
-    // mongoose.connect(process.env.MONGO_URL);
-    const { positions, activities } = req.body;
+app.post('/resume/positions/:id', async (req, res) => {
+    try {
+        const { positions, activities } = req.body;
 
-    // Check if user is verified
-    const { token } = req.cookies;
-    if (token) {
+        // Check if user is verified
+        const { token } = req.cookies;
+        if (!token) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
         jwt.verify(token, jwtSalt, {}, async (err, userData) => {
-            if (err) throw err;
+            if (err) {
+                return res.status(401).json({ message: 'Invalid token' });
+            }
 
             try {
                 // Find if it already exists
@@ -335,12 +323,12 @@ app.post('/api/resume/positions/:id', async (req, res) => {
                 res.status(500).json({ message: 'Server error during saving' });
             }
         });
-    } else {
-        res.json(null);
+    } catch (error) {
+        console.error('Route error:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 });
-app.get('/api/resume/positions/:id', async (req, res) => {
-    // mongoose.connect(process.env.MONGO_URL);
+app.get('/resume/positions/:id', async (req, res) => {
     const { id } = req.params;
     try {
         const positionInfo = await PositionModel.findOne({ owner: id });
@@ -354,15 +342,20 @@ app.get('/api/resume/positions/:id', async (req, res) => {
     }
 });
 
-app.post('/api/resume/platforms/:id', async (req, res) => {
-    // mongoose.connect(process.env.MONGO_URL);
-    const { operatingSystems, programmingSkills, webDesigningSkills, softwareSkills, courses } = req.body;
+app.post('/resume/platforms/:id', async (req, res) => {
+    try {
+        const { operatingSystems, programmingSkills, webDesigningSkills, softwareSkills, courses } = req.body;
 
-    // Check if user is verified
-    const { token } = req.cookies;
-    if (token) {
+        // Check if user is verified
+        const { token } = req.cookies;
+        if (!token) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
         jwt.verify(token, jwtSalt, {}, async (err, userData) => {
-            if (err) throw err;
+            if (err) {
+                return res.status(401).json({ message: 'Invalid token' });
+            }
 
             try {
                 // Find if it already exists
@@ -398,12 +391,12 @@ app.post('/api/resume/platforms/:id', async (req, res) => {
                 res.status(500).json({ message: 'Server error during saving' });
             }
         });
-    } else {
-        res.json(null);
+    } catch (error) {
+        console.error('Route error:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 });
-app.get('/api/resume/platforms/:id', async (req, res) => {
-    // mongoose.connect(process.env.MONGO_URL);
+app.get('/resume/platforms/:id', async (req, res) => {
     const { id } = req.params;
     try {
         const platformInfo = await PlatformModel.findOne({ owner: id });
@@ -417,26 +410,41 @@ app.get('/api/resume/platforms/:id', async (req, res) => {
     }
 });
 
-app.post('/api/resume/projects/:id', async (req, res) => {
-    // mongoose.connect(process.env.MONGO_URL);
-    const { id } = req.params;
-    const { projects, workExperience } = req.body;
-
+app.post('/resume/projects/:id', async (req, res) => {
     try {
-        const project = await ProjectModel.findOneAndUpdate(
-            { owner: id },
-            { projects, workExperience },
-            { new: true, upsert: true } // Create new if not exists
-        );
+        const { id } = req.params;
+        const { projects, workExperience } = req.body;
 
-        res.json(project);
+        // Check if user is verified
+        const { token } = req.cookies;
+        if (!token) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        jwt.verify(token, jwtSalt, {}, async (err) => {
+            if (err) {
+                return res.status(401).json({ message: 'Invalid token' });
+            }
+
+            try {
+                const project = await ProjectModel.findOneAndUpdate(
+                    { owner: id },
+                    { projects, workExperience },
+                    { new: true, upsert: true }
+                );
+
+                res.json(project);
+            } catch (error) {
+                console.error('Error saving project data:', error);
+                res.status(500).json({ message: 'Internal server error' });
+            }
+        });
     } catch (error) {
-        console.error('Error saving project data:', error);
+        console.error('Route error:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
-app.get('/api/resume/projects/:id', async (req, res) => {
-    // mongoose.connect(process.env.MONGO_URL);
+app.get('/resume/projects/:id', async (req, res) => {
     const { id } = req.params;
 
     try {
@@ -455,50 +463,100 @@ app.get('/api/resume/projects/:id', async (req, res) => {
 // MAIN DOC CREATOR CLASS
 class DocumentCreator {
     create([positions, academics, platforms, projects, personaInfo]) {
-        const document = new Document({
-            sections: [{
-                children: [
-                    ...this.createppperson(personaInfo),
-                    new Paragraph({ text: ` ` }),
-                    this.createHeading(""),
-                    new Paragraph({ text: ` ` }),
-                    ...this.createEducationSections(academics),
-                    new Paragraph({ text: ` ` }),
-                    this.createHeading("Scholastic Achievements"),
-                    new Paragraph({ text: ` ` }),
-                    ...this.createScholasticAchievementsSections(academics),
-                    new Paragraph({ text: ` ` }),
-                    ...this.workexpcontent(projects),
-                    this.createHeading("Projects"),
-                    new Paragraph({ text: ` ` }),
-                    ...this.createProjectsSections(projects),
-                    new Paragraph({ text: ` ` }),
-                    this.createHeading("Platforms, Languages, Technologies & Tools Worked"),
-                    new Paragraph({ text: ` ` }),
-                    ...this.createSkillsSections(platforms),
-                    new Paragraph({ text: ` ` }),
-                    this.createHeading("Courses Undertaken"),
-                    new Paragraph({ text: ` ` }),
-                    ...this.createCoursesSections(platforms),
-                    new Paragraph({ text: ` ` }),
-                    this.createHeading("Positions of Responsibility"),
-                    new Paragraph({ text: ` ` }),
-                    ...this.createExperienceSections(positions),
-                    new Paragraph({ text: ` ` }),
-                    this.createHeading("Extracurricular Activities"),
-                    new Paragraph({ text: ` ` }),
-                    ...this.createActivitiesSections(positions),
-                ],
-            }],
-        });
+        // Validate all required data
+        if (!positions || !academics || !platforms || !projects || !personaInfo) {
+            throw new Error('Missing required resume data');
+        }
 
-        return document;
+        try {
+            // const imageBuffer = fs.readFileSync('image/sgsLogo.png');
+            const imagePath = path.join(__dirname, 'image', 'sgsLogo.png');
+            let imageBuffer;
+
+            try {
+                imageBuffer = fs.readFileSync(imagePath);
+            } catch (imgErr) {
+                console.warn('Logo image not found, skipping image');
+                imageBuffer = null;
+            }
+
+            const documentChildren = [];
+
+            // Add image if available
+            if (imageBuffer) {
+                documentChildren.push(
+                    new Paragraph({
+                        children: [
+                            new ImageRun({
+                                data: imageBuffer,
+                                transformation: {
+                                    width: 100,
+                                    height: 100,
+                                },
+                                floating: {
+                                    horizontalPosition: {
+                                        offset: 1000000,
+                                    },
+                                    verticalPosition: {
+                                        offset: 1000000,
+                                    },
+                                },
+                            }),
+                        ],
+                    }),
+                );
+            }
+
+            documentChildren.push(
+                ...this.createppperson(personaInfo),
+                new Paragraph({ text: ` ` }),
+                this.createHeading(""),
+                new Paragraph({ text: ` ` }),
+                ...this.createEducationSections(academics),
+                new Paragraph({ text: ` ` }),
+                this.createHeading("Scholastic Achievements"),
+                new Paragraph({ text: ` ` }),
+                ...this.createScholasticAchievementsSections(academics),
+                new Paragraph({ text: ` ` }),
+                ...this.workexpcontent(projects),
+                this.createHeading("Projects"),
+                new Paragraph({ text: ` ` }),
+                ...this.createProjectsSections(projects),
+                new Paragraph({ text: ` ` }),
+                this.createHeading("Platforms, Languages, Technologies & Tools Worked"),
+                new Paragraph({ text: ` ` }),
+                ...this.createSkillsSections(platforms),
+                new Paragraph({ text: ` ` }),
+                this.createHeading("Courses Undertaken"),
+                new Paragraph({ text: ` ` }),
+                ...this.createCoursesSections(platforms),
+                new Paragraph({ text: ` ` }),
+                this.createHeading("Positions of Responsibility"),
+                new Paragraph({ text: ` ` }),
+                ...this.createExperienceSections(positions),
+                new Paragraph({ text: ` ` }),
+                this.createHeading("Extracurricular Activities"),
+                new Paragraph({ text: ` ` }),
+                ...this.createActivitiesSections(positions),
+            );
+
+            const document = new Document({
+                sections: [{
+                    children: documentChildren,
+                }],
+            });
+
+            return document;
+        } catch (error) {
+            console.error('Error creating document:', error);
+            throw error;
+        }
     }
 
     workexpcontent(projects) {
         const content = [];
 
-        if (projects.workExperience && projects.workExperience.length > 0) {
+        if (projects && projects.workExperience && projects.workExperience.length > 0) {
             content.push(
                 this.createHeading("Work Experience"),
                 new Paragraph({ text: ` ` }),
@@ -511,43 +569,50 @@ class DocumentCreator {
     }
 
     createWorkExperienceSections(workExperience) {
+        if (!workExperience || workExperience.length === 0) {
+            return [];
+        }
+
         return workExperience.map(experience => [
-            this.createInstitutionHeader(experience.jobTitle, experience.duration),
-            this.createRoleText(experience.company),
-            ...this.splitParagraphIntoBullets(experience.description).map(this.createBullet)
+            this.createInstitutionHeader(experience.jobTitle || '', experience.duration || ''),
+            this.createRoleText(experience.company || ''),
+            ...this.splitParagraphIntoBullets(experience.description || '').map(this.createBullet)
         ]).flat();
     }
 
 
     createppperson(personaInfo) {
-        // Define the font style with size 8
+        // Validate personaInfo exists
+        if (!personaInfo) {
+            throw new Error('Personal information is required');
+        }
+
         const boldGeorgiaTextRun = (text) => new TextRun({
             text,
             bold: true,
             font: 'Georgia',
-            size: 8 * 2, // Font size in half-points (8pt * 2 = 16 half-points)
+            size: 8 * 2,
         });
 
-        // Create the table row with two columns
         const tableRow = new TableRow({
             children: [
                 // First Column
                 new TableCell({
                     children: [
                         new Paragraph({
-                            children: [boldGeorgiaTextRun('[logo]                                      ' + personaInfo.firstName + ' ' + personaInfo.lastName)],
+                            children: [boldGeorgiaTextRun('                                                  ' + (personaInfo.firstName || '') + ' ' + (personaInfo.lastName || ''))],
                         }),
                         new Paragraph({
-                            children: [boldGeorgiaTextRun('                                                  ' + 'UG ' + personaInfo.year)],
+                            children: [boldGeorgiaTextRun('                                                  ' + 'UG ' + (personaInfo.year || ''))],
                         }),
                         new Paragraph({
                             children: [boldGeorgiaTextRun('                                                  ' + 'SGSITS, Indore')],
                         }),
                         new Paragraph({
-                            children: [boldGeorgiaTextRun('                                                  ' + 'Date Of Birth: ' + personaInfo.dob)],
+                            children: [boldGeorgiaTextRun('                                                  ' + 'Date Of Birth: ' + (personaInfo.dob || ''))],
                         }),
                         new Paragraph({
-                            children: [boldGeorgiaTextRun('                                                  ' + 'Email ID: ' + personaInfo.email)],
+                            children: [boldGeorgiaTextRun('                                                  ' + 'Email ID: ' + (personaInfo.email || ''))],
                         }),
                     ],
                     borders: {
@@ -556,25 +621,25 @@ class DocumentCreator {
                         left: { size: 0, color: "FFFFFF" },
                         right: { size: 0, color: "FFFFFF" },
                     },
-                    width: { size: 60, type: WidthType.PERCENTAGE }, // 60% width of the table
+                    width: { size: 60, type: WidthType.PERCENTAGE },
                 }),
                 // Second Column
                 new TableCell({
                     children: [
                         new Paragraph({
-                            children: [boldGeorgiaTextRun('Enrollment No.: ' + personaInfo.enrollmentNo)],
+                            children: [boldGeorgiaTextRun('Enrollment No.: ' + (personaInfo.enrollmentNo || ''))],
                         }),
                         new Paragraph({
-                            children: [boldGeorgiaTextRun('Department: ' + personaInfo.branch)],
+                            children: [boldGeorgiaTextRun('Department: ' + (personaInfo.branch || ''))],
                         }),
                         new Paragraph({
-                            children: [boldGeorgiaTextRun('Gender: ' + personaInfo.gender)],
+                            children: [boldGeorgiaTextRun('Gender: ' + (personaInfo.gender || ''))],
                         }),
                         new Paragraph({
                             children: [boldGeorgiaTextRun('Specialization: None')],
                         }),
                         new Paragraph({
-                            children: [boldGeorgiaTextRun('Mobile #: ' + personaInfo.phone)],
+                            children: [boldGeorgiaTextRun('Mobile #: ' + (personaInfo.phone || ''))],
                         }),
                     ],
                     borders: {
@@ -583,16 +648,15 @@ class DocumentCreator {
                         left: { size: 0, color: "FFFFFF" },
                         right: { size: 0, color: "FFFFFF" },
                     },
-                    width: { size: 40, type: WidthType.PERCENTAGE }, // 40% width of the table
+                    width: { size: 40, type: WidthType.PERCENTAGE },
                 }),
             ],
         });
 
-        // Create the table with one row
         const table = new Table({
             rows: [tableRow],
             width: {
-                size: 100, // 100% width of the page
+                size: 100,
                 type: WidthType.PERCENTAGE,
             },
             borders: {
@@ -630,16 +694,21 @@ class DocumentCreator {
     }
 
     createEducationSections(academics) {
+        // Validate academics data exists
+        if (!academics) {
+            return [];
+        }
+
         const georgiaTextRun = (text) => new TextRun({
             text,
             font: 'Georgia',
-            size: 8 * 2, // Font size in half-points (8pt * 2 = 16 half-points)
+            size: 8 * 2,
         });
         const georgiaTextRunBold = (text) => new TextRun({
             text,
             bold: true,
             font: 'Georgia',
-            size: 8 * 2, // Font size in half-points (8pt * 2 = 16 half-points)
+            size: 8 * 2,
         });
 
         // Create table rows
@@ -883,29 +952,41 @@ class DocumentCreator {
     }
 
     createProjectsSections(projects) {
+        if (!projects || !projects.projects || projects.projects.length === 0) {
+            return [];
+        }
+
         return projects.projects.map(project => [
-            this.createInstitutionHeader(project.title, project.duration),
-            ...this.splitParagraphIntoBullets(project.description).map(this.createBullet),
-            this.createBullet("Teck Stack : " + project.technologies),
+            this.createInstitutionHeader(project.title || '', project.duration || ''),
+            ...this.splitParagraphIntoBullets(project.description || '').map(this.createBullet),
+            this.createBullet("Tech Stack : " + (project.technologies || 'N/A')),
             new Paragraph({ text: ` ` }),
         ]).flat();
     }
 
     createSkillsSections(platforms) {
+        if (!platforms) {
+            return [];
+        }
+
         const skills = [
-            `Operating Systems: ${platforms.operatingSystems.join(", ")}`,
-            `Programming Skills: ${platforms.programmingSkills.join(", ")}`,
-            `Web Designing: ${platforms.webDesigningSkills.join(", ")}`,
-            `Software Skills: ${platforms.softwareSkills.join(", ")}`,
+            `Operating Systems: ${(platforms.operatingSystems || []).join(", ")}`,
+            `Programming Skills: ${(platforms.programmingSkills || []).join(", ")}`,
+            `Web Designing: ${(platforms.webDesigningSkills || []).join(", ")}`,
+            `Software Skills: ${(platforms.softwareSkills || []).join(", ")}`,
         ];
         return skills.map(skill => this.createBullet(skill));
     }
 
     createCoursesSections(platforms) {
+        if (!platforms || !platforms.courses) {
+            return [];
+        }
+
         const tableRows = [];
-
-        const maxRows = Math.max(platforms.courses.core.length, platforms.courses.depth.length);
-
+        const coreCourses = platforms.courses.core || [];
+        const depthCourses = platforms.courses.depth || [];
+        const maxRows = Math.max(coreCourses.length, depthCourses.length);
 
         for (let i = 0; i < maxRows; i++) {
             tableRows.push(new TableRow({
@@ -915,7 +996,7 @@ class DocumentCreator {
                             new Paragraph({
                                 children: [
                                     new TextRun({
-                                        text: platforms.courses.core[i] || "",
+                                        text: coreCourses[i] || "",
                                         font: 'Georgia',
                                         size: 8 * 2
                                     }),
@@ -937,7 +1018,7 @@ class DocumentCreator {
                             new Paragraph({
                                 children: [
                                     new TextRun({
-                                        text: platforms.courses.depth[i] || "",
+                                        text: depthCourses[i] || "",
                                         font: 'Georgia',
                                         size: 8 * 2
                                     }),
@@ -1001,22 +1082,34 @@ class DocumentCreator {
 
 
     createExperienceSections(positions) {
+        if (!positions || !positions.positions || positions.positions.length === 0) {
+            return [];
+        }
+
         return positions.positions.map((position) => [
-            this.createInstitutionHeader(position.position, position.duration),
-            ...position.description.split('/').map(desc => this.createBullet(desc.trim())),
+            this.createInstitutionHeader(position.position || '', position.duration || ''),
+            ...(position.description || '').split('/').map(desc => this.createBullet(desc.trim())),
             new Paragraph({ text: ` ` }),
         ]).flat();
     }
 
     createActivitiesSections(positions) {
+        if (!positions || !positions.activities || positions.activities.length === 0) {
+            return [];
+        }
+
         return positions.activities.map(activity => [
-            this.createInstitutionHeader(activity.event, activity.duration),
-            ...this.splitParagraphIntoBullets(activity.description).map(this.createBullet),
+            this.createInstitutionHeader(activity.event || '', activity.duration || ''),
+            ...this.splitParagraphIntoBullets(activity.description || '').map(this.createBullet),
             new Paragraph({ text: ` ` }),
         ]).flat();
     }
 
     createScholasticAchievementsSections(academics) {
+        if (!academics || !academics.scholasticAchievement) {
+            return [];
+        }
+
         return this.splitParagraphIntoBullets(academics.scholasticAchievement).map(this.createBullet);
     }
 
@@ -1059,9 +1152,9 @@ class DocumentCreator {
         return new Paragraph({
             children: [
                 new TextRun({
-                    text: text,
+                    text: text || '',
                     font: 'Georgia',
-                    size: 8 * 2, // Font size in half-points (8pt * 2 = 16 half-points)
+                    size: 8 * 2,
                 })
             ],
             bullet: {
@@ -1077,35 +1170,65 @@ class DocumentCreator {
     }
 
     splitParagraphIntoBullets(text) {
+        if (!text) {
+            return [];
+        }
         return text.split("/");
     }
 }
 
-app.get('/api/download-resume/:id', async (req, res) => {
-    // mongoose.connect(process.env.MONGO_URL);
+app.get('/download-resume/:id', async (req, res) => {
     const userId = req.params.id;
 
     try {
-        const user = await UserModel.findById(userId);
-        const personaInfo = await PersonaInfoModel.findOne({ owner: userId });
-        const academics = await AcademicModel.findOne({ owner: userId });
-        const platforms = await PlatformModel.findOne({ owner: userId });
-        const positions = await PositionModel.findOne({ owner: userId }).populate('owner');
-        const projects = await ProjectModel.findOne({ owner: userId });
-
-        if (!user || !personaInfo || !academics || !platforms || !positions || !projects) {
-            return res.status(404).json({ message: 'User or related data not found' });
+        // Validate user ID
+        if (!userId) {
+            return res.status(400).json({ message: 'User ID is required' });
         }
 
-        const documentCreator = new DocumentCreator();
-        const doc = documentCreator.create([positions, academics, platforms, projects, personaInfo]);
+        // Check authentication
+        const { token } = req.cookies;
+        if (!token) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
 
-        const buffer = await Packer.toBuffer(doc);
-        res.setHeader('Content-Disposition', `attachment; filename=CV02Pages_${personaInfo.enrollmentNo}_BT_Branch_${personaInfo.firstName}_${personaInfo.lastName}.docx`);
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-        res.send(buffer);
+        jwt.verify(token, jwtSalt, {}, async (err) => {
+            if (err) {
+                return res.status(401).json({ message: 'Invalid token' });
+            }
+
+            try {
+                const user = await UserModel.findById(userId);
+                if (!user) {
+                    return res.status(404).json({ message: 'User not found' });
+                }
+
+                const personaInfo = await PersonaInfoModel.findOne({ owner: userId });
+                const academics = await AcademicModel.findOne({ owner: userId });
+                const platforms = await PlatformModel.findOne({ owner: userId });
+                const positions = await PositionModel.findOne({ owner: userId });
+                const projects = await ProjectModel.findOne({ owner: userId });
+
+                // Validate required data
+                if (!personaInfo || !academics || !platforms || !positions || !projects) {
+                    return res.status(400).json({ message: 'Incomplete resume data. Please fill all sections.' });
+                }
+
+                const documentCreator = new DocumentCreator();
+                const doc = documentCreator.create([positions, academics, platforms, projects, personaInfo]);
+
+                const buffer = await Packer.toBuffer(doc);
+                const filename = `CV_${personaInfo.enrollmentNo}_${personaInfo.firstName}_${personaInfo.lastName}.docx`;
+                res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+                res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+                res.send(buffer);
+            } catch (error) {
+                console.error('Error generating resume:', error);
+                res.status(500).json({ message: 'Error generating resume' });
+            }
+        });
     } catch (error) {
-        console.error(error);
+        console.error('Download resume error:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
