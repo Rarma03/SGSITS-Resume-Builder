@@ -38,14 +38,8 @@ mongoose.connect(mongokey)
     .catch(err => console.error('MongoDB connection error:', err));
 
 app.use(cors({
-    origin: [
-        'http://localhost:5173',
-        'https://sgsits-resume-builder.vercel.app',
-        'https://sgsits-resume-builder-01.vercel.app',
-        'https://sgsits-resume-builder-frontend.vercel.app',
-        'https://sgsits-resume-builder-6m7k5fi4e-rarmas-projects.vercel.app'
-    ],
-    credentials: true,
+    origin: '*',
+    credentials: false,
 }))
 
 // Health check route
