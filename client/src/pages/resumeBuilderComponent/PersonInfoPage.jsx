@@ -54,12 +54,20 @@ export default function PersonaInfoPage() {
             phone,
         };
 
+        // Validate required fields
+        if (!firstName || !lastName || !email || !phone || !branch) {
+            alert('Please fill all required fields');
+            return;
+        }
+
         try {
             await axios.post(`/resume/personinfo/${id}`, formData, { withCredentials: true });
             console.log('Form data submitted successfully');
+            alert('Personal information saved successfully!');
             // navigate('/resume/academics/' + id);
         } catch (error) {
             console.error('Error submitting form data:', error);
+            alert(error.response?.data?.message || 'Error saving personal information');
         }
     };
 

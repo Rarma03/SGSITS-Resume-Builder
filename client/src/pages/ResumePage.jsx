@@ -27,22 +27,36 @@ export default function ResumePage() {
     }
 
     const [load, setLoad] = useState(false);
+    const [error, setError] = useState('');
+
     const downloadResume = async (ev) => {
         ev.preventDefault();
         try {
+            setError('');
             setLoad(true);
             const response = await axios.get(`/download-resume/${id}`, {
                 responseType: 'blob',
+                withCredentials: true,
             });
             setLoad(false);
+
+            // Check if response is valid
+            if (!response.data || response.data.size === 0) {
+                setError('Failed to generate resume. Please try again.');
+                return;
+            }
+
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
             link.setAttribute('download', 'CV02Pages_{enrollmentNo}_BT_Branch_{firstName}_{lastName}.docx');
             document.body.appendChild(link);
             link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error('Error downloading resume:', error);
+            setError(error.response?.data?.message || 'Error downloading resume. Please fill all required fields.');
             setLoad(false);
         }
     };
@@ -59,6 +73,12 @@ export default function ResumePage() {
             </div>
 
             <ResumeNavPage />
+
+            {error && (
+                <div className="bg-red-500 text-white p-4 rounded-md mb-4 text-center">
+                    {error}
+                </div>
+            )}
 
             {subpage === 'resume' && (
                 <div className="text-white text-2xl w-full text-center">

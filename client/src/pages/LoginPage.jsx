@@ -13,28 +13,33 @@ export default function LoginPage() {
 
     async function handleLoginSubmit(event) {
         event.preventDefault();
+
+        // Validate email
+        let chk = checkValidEmail(email);
+        if (!chk) {
+            alert('Use Appropriate Mail id only')
+            setEmail('');
+            return;
+        }
+
         try {
             setLoad(true);
-            let chk = checkValidEmail(email);
-            if (!chk) {
-                alert('Use Appropriate Mail id only')
-                setEmail('');
-                setLoad(false);
-                return;
-            }
             const userData = await axios.post('/login', {
                 email,
                 password
             });
 
             alert("Login Success");
-            setUser(userData.data); // we only want to pass data not other info
+            setUser(userData.data.user); // Extract user from response
             setLoad(false);
 
             navigate('/profile');
         }
         catch (err) {
-            alert(err.response?.data?.message);
+            console.error('Login error:', err);
+            alert(err.response?.data?.message || 'Login failed. Please try again.');
+            setEmail('');
+            setPassword('');
             setLoad(false);
         }
     }

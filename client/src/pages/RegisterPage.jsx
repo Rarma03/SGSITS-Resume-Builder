@@ -12,20 +12,24 @@ export default function RegisterPage() {
 
     async function registerUser(event) {
         event.preventDefault();
+
+        // Validate inputs
         if (checkIfEmpty(name) || checkIfEmpty(email) || checkIfEmpty(password)) {
-            alert('Dont Leave empty fields');
+            alert('Please fill all fields');
             return;
         }
+
+        // Validate email format
+        let chk = checkValidEmail(email);
+        if (!chk) {
+            alert('Use Appropriate Mail id only')
+            setEmail('');
+            return;
+        }
+
         try {
             setLoad(true);
-            let chk = checkValidEmail(email);
-            if (!chk) {
-                alert('Use Appropriate Mail id only')
-                setEmail('');
-                setLoad(false);
-                return;
-            }
-            await axios.post('/register', {
+            const response = await axios.post('/register', {
                 name,
                 email,
                 password
@@ -35,7 +39,8 @@ export default function RegisterPage() {
             navigate('/login');
         }
         catch (err) {
-            alert(err.response?.data?.message || 'Some problem occured while registration');
+            console.error('Registration error:', err);
+            alert(err.response?.data?.message || 'Registration failed. Please try again.');
             setLoad(false);
         }
     }

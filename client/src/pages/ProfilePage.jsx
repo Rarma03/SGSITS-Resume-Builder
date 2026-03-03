@@ -32,11 +32,14 @@ export default function ProfilePage() {
     // logout function
     const handleLogout = async () => {
         try {
-            await axios.post('/logout');
+            await axios.post('/logout', {}, { withCredentials: true });
             setUser(null); // Clear user state on successful logout
-            navigate('/login'); // Redirect to login page
+            navigate('/'); // Redirect to home page
         } catch (error) {
             console.error('Error during logout:', error);
+            // Force logout locally even if API call fails
+            setUser(null);
+            navigate('/');
         }
     };
 
