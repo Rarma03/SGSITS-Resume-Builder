@@ -12,7 +12,10 @@ import PositionPage from './pages/resumeBuilderComponent/PositionPage'
 import axios from 'axios'
 import { UserContextProvider } from './UserContext'
 
-axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
+// Set API base URL - use environment variable or fallback to localhost
+const apiBaseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
+console.log('API Base URL:', apiBaseURL);
+axios.defaults.baseURL = apiBaseURL;
 axios.defaults.withCredentials = true;
 
 export default function App() {
