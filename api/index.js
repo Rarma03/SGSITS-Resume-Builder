@@ -30,24 +30,20 @@ app.use(express.static('image'));
 app.use(express.json());
 app.use(cookieParser());
 
-const mongokey = 'mongodb+srv://710vermaraj:BV5i630RqWD3V0FY@gsresumebuildercluster.wdsegoh.mongodb.net/?retryWrites=true&w=majority&appName=gsResumeBuilderCluster';
-
-// Connect to MongoDB once at startup
-mongoose.connect(mongokey)
-    .then(() => console.log('MongoDB connected'))
-    .catch(err => console.error('MongoDB connection error:', err));
-
 app.use(cors({
     origin: '*',
     credentials: false,
 }))
 
+// API Routes prefix
+const apiRouter = express.Router();
+
 // Health check route
-app.get('/', (req, res) => {
+apiRouter.get('/', (req, res) => {
     res.json('mongoconnect');
 })
 
-app.post('/register', async (req, res) => {
+apiRouter.post('/register', async (req, res) => {
     const { name, email, password } = req.body;
 
     try {
@@ -76,7 +72,7 @@ app.post('/register', async (req, res) => {
     }
 })
 
-app.post('/login', async (req, res) => {
+apiRouter.post('/login', async (req, res) => {
     const { email, password } = req.body;
     try {
         if (!email || !password) {
@@ -94,9 +90,9 @@ app.post('/login', async (req, res) => {
                     }
                     res.cookie('token', token, {
                         httpOnly: true,
-                        secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
+                        secure: process.env.NODE_ENV === 'production',
                         sameSite: 'lax',
-                        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+                        maxAge: 7 * 24 * 60 * 60 * 1000
                     }).json({ user: userData, token });
                 });
             } else {
@@ -112,7 +108,7 @@ app.post('/login', async (req, res) => {
 });
 
 
-app.get('/profile', async (req, res) => {
+apiRouter.get('/profile', async (req, res) => {
     try {
         const { token } = req.cookies;
         console.log('Token received:', token ? 'Yes' : 'No');
@@ -141,12 +137,11 @@ app.get('/profile', async (req, res) => {
     }
 })
 
-app.post('/logout', (req, res) => {
-    // mongoose.connect(mongokey);
+apiRouter.post('/logout', (req, res) => {
     res.clearCookie('token').json(true);
 })
 
-app.post('/resume/personinfo/:id', async (req, res) => {
+apiRouter.post('/resume/personinfo/:id', async (req, res) => {
     try {
         const {
             firstName, lastName, dob, gender, branch, enrollmentNo,
@@ -200,7 +195,7 @@ app.post('/resume/personinfo/:id', async (req, res) => {
     }
 })
 
-app.get('/resume/personinfo/:id', async (req, res) => {
+apiRouter.get('/resume/personinfo/:id', async (req, res) => {
     const { id } = req.params;
     try {
         const personInfo = await PersonaInfoModel.findOne({ owner: id });
@@ -214,7 +209,7 @@ app.get('/resume/personinfo/:id', async (req, res) => {
     }
 });
 
-app.post('/resume/academics/:id', async (req, res) => {
+apiRouter.post('/resume/academics/:id', async (req, res) => {
     try {
         const { tenthDetails, twelfthDetails, graduationDetails, scholasticAchievement } = req.body;
 
@@ -266,7 +261,7 @@ app.post('/resume/academics/:id', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
-app.get('/resume/academics/:id', async (req, res) => {
+apiRouter.get('/resume/academics/:id', async (req, res) => {
     const { id } = req.params;
     try {
         const academicInfo = await AcademicModel.findOne({ owner: id });
@@ -280,7 +275,7 @@ app.get('/resume/academics/:id', async (req, res) => {
     }
 });
 
-app.post('/resume/positions/:id', async (req, res) => {
+apiRouter.post('/resume/positions/:id', async (req, res) => {
     try {
         const { positions, activities } = req.body;
 
@@ -328,7 +323,7 @@ app.post('/resume/positions/:id', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
-app.get('/resume/positions/:id', async (req, res) => {
+apiRouter.get('/resume/positions/:id', async (req, res) => {
     const { id } = req.params;
     try {
         const positionInfo = await PositionModel.findOne({ owner: id });
@@ -342,7 +337,7 @@ app.get('/resume/positions/:id', async (req, res) => {
     }
 });
 
-app.post('/resume/platforms/:id', async (req, res) => {
+apiRouter.post('/resume/platforms/:id', async (req, res) => {
     try {
         const { operatingSystems, programmingSkills, webDesigningSkills, softwareSkills, courses } = req.body;
 
@@ -396,7 +391,7 @@ app.post('/resume/platforms/:id', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
-app.get('/resume/platforms/:id', async (req, res) => {
+apiRouter.get('/resume/platforms/:id', async (req, res) => {
     const { id } = req.params;
     try {
         const platformInfo = await PlatformModel.findOne({ owner: id });
@@ -410,7 +405,7 @@ app.get('/resume/platforms/:id', async (req, res) => {
     }
 });
 
-app.post('/resume/projects/:id', async (req, res) => {
+apiRouter.post('/resume/projects/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const { projects, workExperience } = req.body;
@@ -444,7 +439,7 @@ app.post('/resume/projects/:id', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
-app.get('/resume/projects/:id', async (req, res) => {
+apiRouter.get('/resume/projects/:id', async (req, res) => {
     const { id } = req.params;
 
     try {
@@ -1177,7 +1172,7 @@ class DocumentCreator {
     }
 }
 
-app.get('/download-resume/:id', async (req, res) => {
+apiRouter.get('/download-resume/:id', async (req, res) => {
     const userId = req.params.id;
 
     try {
@@ -1232,6 +1227,16 @@ app.get('/download-resume/:id', async (req, res) => {
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
+
+// Mount API router with /api prefix
+app.use('/api', apiRouter);
+
+const mongokey = 'mongodb+srv://710vermaraj:BV5i630RqWD3V0FY@gsresumebuildercluster.wdsegoh.mongodb.net/?retryWrites=true&w=majority&appName=gsResumeBuilderCluster';
+
+// Connect to MongoDB once at startup
+mongoose.connect(mongokey)
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.error('MongoDB connection error:', err));
 
 const PORTT = process.env.PORT || 4000;
 app.listen(PORTT);
